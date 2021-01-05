@@ -8,7 +8,7 @@ from collections import OrderedDict, namedtuple
 from types import FunctionType
 import xarray
 from typing import Union, List, OrderedDict
-
+from glob import glob
 from . import weather as rk_weather
 
 
@@ -81,6 +81,10 @@ class WorkflowManager():
 
     def _set_sim_shape(self):
         self._sim_shape_ = len(self._time_index_), self.locs.count
+
+    def extract_raster_values_at_placements(self, raster, **kwargs):
+        """Extracts pixel values at each of the configured placements from the specified raster file"""
+        return gk.raster.interpolateValues(raster, points=self.locs, **kwargs)
 
     def read(self, variables: Union[str, List[str]], source_type: str, source: str, set_time_index: bool = False, spatial_interpolation_mode: str = "bilinear", temporal_reindex_method: str = "nearest", **kwargs):
         """Reads the specified variables from the NetCDF4-style weather dataset, and then extracts
@@ -458,6 +462,9 @@ def distribute_workflow(workflow_function: FunctionType, placements: pd.DataFram
     # Split placements into groups
     if "geom" in placements.columns:
         locs = gk.LocationSet(placements)
+        placements['lat'] = locs.lats
+        placements['lon'] = locs.lons
+        del placements['geom']
     else:
         locs = gk.LocationSet(np.column_stack([placements.lon.values, placements.lat.values]))
 
@@ -480,7 +487,6 @@ def distribute_workflow(workflow_function: FunctionType, placements: pd.DataFram
 
     results = []
     for gid, placement_group in enumerate(placement_groups):
-
         kwargs_ = kwargs.copy()
         if intermediate_output_dir is not None:
             kwargs_['output_netcdf_path'] = join(intermediate_output_dir, "simulation_group_{:05d}.nc".format(gid))
@@ -490,6 +496,7 @@ def distribute_workflow(workflow_function: FunctionType, placements: pd.DataFram
             args=(placement_group, ),
             kwds=kwargs_
         ))
+        #results.append(workflow_function(placement_group, **kwargs_ ))
 
     xdss = []
     for result in results:
@@ -501,7 +508,30 @@ def distribute_workflow(workflow_function: FunctionType, placements: pd.DataFram
     if intermediate_output_dir is None:
         return xarray.concat(xdss, dim="location").sortby('location')
     else:
+        # return load_workflow_result(xdss)
         return xdss
+
+
+def load_workflow_result(datasets, loader=xarray.load_dataset, sortby='location'):
+
+    if isinstance(datasets, str):
+        if isdir(datasets):
+            datasets = glob(join(datasets, "*.nc"))
+        else:
+            datasets = glob(datasets)
+
+    if len(datasets) == 1:
+        ds = xarray.load_dataset(datasets[0]).sortby('locations')
+    else:
+        ds = xarray.concat(
+            map(loader, datasets),
+            dim="location"
+        )
+
+    if sortby is not None:
+        ds = ds.sortby(sortby)
+
+    return ds
 
 
 class WorkflowQueue():

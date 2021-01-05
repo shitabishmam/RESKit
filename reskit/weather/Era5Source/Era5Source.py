@@ -164,6 +164,24 @@ class Era5Source(NCSource):
     loc_to_index = NCSource._loc_to_index_rect(0.25, 0.25)
 
     # STANDARD LOADERS
+    def _load_wind_speed(self, height:int):
+
+        u_name = "u{}".format(height)
+        v_name = "v{}".format(height)
+
+        self.load(u_name)
+        self.load(v_name)
+        return np.sqrt(self.data[u_name]**2 + self.data[v_name]**2)  # total speed
+
+    def sload_boundary_layer_height(self):
+        """Standard loader function for the variable 'boundary_layer_height' in meters 
+        from the surface
+
+        """
+        return self.load(
+            "blh",
+            "boundary_layer_height")
+
     def sload_elevated_wind_speed(self):
         """Standard loader function for the variable 'elevated_wind_speed'
 
@@ -175,11 +193,17 @@ class Era5Source(NCSource):
         The "ws<X>" variable also needs to be precomputed from the raw variables "u<X>" 
             and "v<X>"
 
-        TODO: Update function to also be able to handle raw ERA5 inputs for u & v
+        TODO: Add nicer error catching for when neither loading route is successful
         """
-        return self.load(
-            "ws{}".format(self.ELEVATED_WIND_SPEED_HEIGHT),
-            "elevated_wind_speed")
+        combined_wind_speed_name = "ws{}".format(self.ELEVATED_WIND_SPEED_HEIGHT)
+
+        if combined_wind_speed_name in self.variables.index:
+            self.load(
+                combined_wind_speed_name,
+                "elevated_wind_speed")
+        else:
+            self.data["elevated_wind_speed"] = self._load_wind_speed(self.ELEVATED_WIND_SPEED_HEIGHT)
+        return self.data["elevated_wind_speed"]
 
     def sload_surface_wind_speed(self):
         """Standard loader function for the variable 'surface_wind_speed'
