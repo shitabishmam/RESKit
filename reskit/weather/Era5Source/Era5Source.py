@@ -164,6 +164,11 @@ class Era5Source(NCSource):
     loc_to_index = NCSource._loc_to_index_rect(0.25, 0.25)
 
     # STANDARD LOADERS
+    def _load_wind_speed(self):
+        self.load("u100")
+        self.load("v100")
+        return np.sqrt(self.data["u100"] * self.data["u100"] + self.data["v100"] * self.data["v100"])  # total speed
+
     def sload_boundary_layer_height(self):
         """Standard loader function for the variable 'boundary_layer_height' in meters 
         from the surface
@@ -186,9 +191,10 @@ class Era5Source(NCSource):
 
         TODO: Update function to also be able to handle raw ERA5 inputs for u & v
         """
-        return self.load(
-            "ws{}".format(self.ELEVATED_WIND_SPEED_HEIGHT),
-            "elevated_wind_speed")
+        self.data["elevated_wind_speed"] = self._load_wind_speed()
+        #return self.load(
+        #    "ws{}".format(self.ELEVATED_WIND_SPEED_HEIGHT),
+        #    "elevated_wind_speed")
 
     def sload_surface_wind_speed(self):
         """Standard loader function for the variable 'surface_wind_speed'
