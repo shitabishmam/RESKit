@@ -281,6 +281,8 @@ def onshore_wind_era5(
     # do simulation
     wf.simulate()
 
+    wf.make_mean(["capacity_factor"])
+
     return wf.to_xarray(
         output_netcdf_path=output_netcdf_path, output_variables=output_variables
     )

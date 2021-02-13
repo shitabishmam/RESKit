@@ -315,6 +315,18 @@ class WorkflowManager:
 
         return self
 
+    def make_mean(self, variables: Union[str, List[str]] = ["capacity_factor"]):
+        """"""
+        if not isinstance(variables, list):
+            variables = [
+                variables,
+            ]
+
+        for var in variables:
+            self.placements["mean_" + var] = self.sim_data[var].mean()
+
+        return self
+
     def register_workflow_parameter(self, key: str, value: Union[str, float]):
         """Add a parameter to the WorkflowManager which will be included in the output XArray dataset
 
