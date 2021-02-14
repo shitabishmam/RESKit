@@ -315,7 +315,9 @@ class WorkflowManager:
 
         return self
 
-    def make_mean(self, variables: Union[str, List[str]] = ["capacity_factor"]):
+    def make_mean(
+        self, variables: Union[str, List[str]] = ["capacity_factor"], fill_na=None
+    ):
         """"""
         if not isinstance(variables, list):
             variables = [
@@ -323,7 +325,10 @@ class WorkflowManager:
             ]
 
         for var in variables:
-            self.placements["mean_" + var] = self.sim_data[var].mean(axis=0)
+            var_data = self.sim_data[var]
+            if fill_na is not None:
+                var_data = var_data.fill_na(fill_na)
+            self.placements["mean_" + var] = var_data.mean(axis=0)
 
         return self
 

@@ -262,7 +262,7 @@ def openfield_pv_era5_unvalidated(
 
     wf.apply_loss_factor(0.20, variables=["capacity_factor", "total_system_generation"])
 
-    wf.make_mean(["capacity_factor", "total_system_generation"])
+    wf.make_mean(["capacity_factor", "total_system_generation"], fill_na=0)
 
     return wf.to_xarray(
         output_netcdf_path=output_netcdf_path, output_variables=output_variables
