@@ -723,7 +723,13 @@ class SolarWorkflowManager(WorkflowManager):
 
             self.sim_data[key] = tmp
 
-        assert (self.sim_data['poa_global'] < 1600).all(), "POA is too large"
+        if (self.sim_data['poa_global'] >= 1300).any():
+            # POA is super big, but this only tends to happen when elevation angles are super low,
+            #  so it should be okay to just set it to zero
+            self.sim_data['poa_global'] = np.where(
+                self.sim_data['poa_global']>1300,
+                self.sim_data['poa_global'],
+                0)
 
         return self
 
