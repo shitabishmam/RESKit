@@ -553,7 +553,7 @@ class SolarWorkflowManager(WorkflowManager):
 
         sel = ~np.isfinite(self.sim_data["direct_normal_irradiance"])
         sel = np.logical_or(sel, self.sim_data["direct_normal_irradiance"] < 0)
-        sel = np.logical_or(sel, self.sim_data["direct_normal_irradiance"] > 1300)
+        sel = np.logical_or(sel, self.sim_data["direct_normal_irradiance"] > 1600)
 
         self.sim_data["direct_normal_irradiance"][sel] = 0
 
@@ -763,7 +763,7 @@ class SolarWorkflowManager(WorkflowManager):
         return self
 
     def _fix_bad_plane_of_array_values(self):
-        bad_poa = self.sim_data["poa_global"] >= 1300
+        bad_poa = self.sim_data["poa_global"] >= 1600
         if (bad_poa).any():
             # POA is super big, but this only tends to happen when elevation angles are super low,
             #  so it should be okay to just set it to zero
