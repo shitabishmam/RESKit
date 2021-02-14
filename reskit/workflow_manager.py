@@ -327,7 +327,7 @@ class WorkflowManager:
         for var in variables:
             var_data = self.sim_data[var]
             if fill_na is not None:
-                var_data = var_data.fill_na(fill_na)
+                var_data = np.where(np.isnan(var_data), 0, var_data)
             self.placements["mean_" + var] = var_data.mean(axis=0)
 
         return self
