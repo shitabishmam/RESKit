@@ -490,6 +490,11 @@ def distribute_workflow(
           use this to write the individual simulation results to the specified directory  
         - By default None
 
+    skip_existing : bool, optional
+        If True, then simulation groups will be skipped if there output file already exists
+        - !!Use with Caution!! If either the placements or `max_bach_size` changes between simulation attempts, then the simulation groups will not be the same, and thus using this argument will not behave properly
+        - Default: False
+
     **kwargs:
         All all key word arguments are passed on as constants to each simulation
         - Use these to set the required arguments for the given `workflow_function`
