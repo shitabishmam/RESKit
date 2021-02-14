@@ -231,6 +231,8 @@ def openfield_pv_era5_unvalidated(placements, era5_path, global_solar_atlas_ghi_
 
     wf.apply_loss_factor(0.20, variables=['capacity_factor', 'total_system_generation'])
 
+    wf.make_mean(['capacity_factor', 'total_system_generation'])
+
     return wf.to_xarray(output_netcdf_path=output_netcdf_path, output_variables=output_variables)
 
 
