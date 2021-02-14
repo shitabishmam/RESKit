@@ -763,11 +763,24 @@ class SolarWorkflowManager(WorkflowManager):
         return self
 
     def _fix_bad_plane_of_array_values(self):
-        if (self.sim_data["poa_global"] >= 1300).any():
+        bad_poa = self.sim_data["poa_global"] >= 1300
+        if (bad_poa).any():
             # POA is super big, but this only tends to happen when elevation angles are super low,
             #  so it should be okay to just set it to zero
             self.sim_data["poa_global"] = np.where(
-                self.sim_data["poa_global"] > 1300, self.sim_data["poa_global"], 0
+                bad_poa, 0, self.sim_data["poa_global"]
+            )
+            self.sim_data["poa_direct"] = np.where(
+                bad_poa, 0, self.sim_data["poa_direct"]
+            )
+            self.sim_data["poa_diffuse"] = np.where(
+                bad_poa, 0, self.sim_data["poa_direct"]
+            )
+            self.sim_data["poa_sky_diffuse"] = np.where(
+                bad_poa, 0, self.sim_data["poa_direct"]
+            )
+            self.sim_data["poa_ground_diffuse"] = np.where(
+                bad_poa, 0, self.sim_data["poa_direct"]
             )
 
     def cell_temperature_from_sapm(self, mounting="glass_open_rack"):
@@ -1099,6 +1112,7 @@ class SolarWorkflowManager(WorkflowManager):
                 np.linspace(maxpoa / 10, maxpoa, 80),
             ]
         )
+
         _temp = np.linspace(cell_temp.min(), cell_temp.max(), 100)
         poaM, tempM = np.meshgrid(_poa, _temp)
 
