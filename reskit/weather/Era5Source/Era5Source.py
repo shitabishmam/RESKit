@@ -304,7 +304,9 @@ class Era5Source(NCSource):
         Automatically reads the variable "fdir" from the given ERA5 source and saves it as the 
         variable 'direct_horizontal_irradiance' in the data library
         """
-        return self.load("fdir", name="direct_horizontal_irradiance")
+        return self.load(
+            "fdir", name="direct_horizontal_irradiance", processor=lambda x: x / 3600
+        )
 
     def sload_global_horizontal_irradiance(self):
         """Standard loader function for the variable 'global_horizontal_irradiance'
@@ -312,4 +314,7 @@ class Era5Source(NCSource):
         Automatically reads the variable "ssrd" from the given ERA5 source and saves it as the 
         variable 'global_horizontal_irradiance' in the data library
         """
-        return self.load("ssrd", name="global_horizontal_irradiance")
+        return self.load(
+            "ssrd", name="global_horizontal_irradiance", processor=lambda x: x / 3600
+        )
+
