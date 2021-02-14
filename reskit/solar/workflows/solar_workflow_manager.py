@@ -1104,7 +1104,7 @@ class SolarWorkflowManager(WorkflowManager):
         cell_temp = self.sim_data["cell_temperature"][sel]
 
         # Use RectBivariateSpline to speed up simulation, but at the cost of accuracy (should still be >99.996%)
-        maxpoa = np.nanmax(poa)
+        maxpoa = 1600  # np.nanmax(poa)
 
         _poa = np.concatenate(
             [
