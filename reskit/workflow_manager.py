@@ -451,6 +451,7 @@ def distribute_workflow(
     jobs: int = 2,
     max_batch_size: int = None,
     intermediate_output_dir: str = None,
+    skip_existing=False,
     **kwargs,
 ) -> xarray.Dataset:
     """Distributes a RESKit simulation workflow across multiple CPUs
@@ -566,9 +567,12 @@ def distribute_workflow(
     for gid, placement_group in enumerate(placement_groups):
         kwargs_ = kwargs.copy()
         if intermediate_output_dir is not None:
-            kwargs_["output_netcdf_path"] = join(
+            output_netcdf_path = join(
                 intermediate_output_dir, "simulation_group_{:05d}.nc".format(gid)
             )
+            if skip_existing and isfile(output_netcdf_path):
+                continue
+            kwargs_["output_netcdf_path"] = output_netcdf_path
 
         results.append(
             pool.apply_async(
