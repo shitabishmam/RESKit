@@ -2,7 +2,19 @@ from ... import weather as rk_weather
 from .solar_workflow_manager import SolarWorkflowManager
 
 
-def openfield_pv_merra_ryberg2019(placements, merra_path, global_solar_atlas_ghi_path, module="WINAICO WSx-240P6", elev=300, tracking="fixed", inverter=None, inverter_kwargs={}, tracking_args={}, output_netcdf_path=None, output_variables=None):
+def openfield_pv_merra_ryberg2019(
+    placements,
+    merra_path,
+    global_solar_atlas_ghi_path,
+    module="WINAICO WSx-240P6",
+    elev=300,
+    tracking="fixed",
+    inverter=None,
+    inverter_kwargs={},
+    tracking_args={},
+    output_netcdf_path=None,
+    output_variables=None,
+):
     """
 
     openfield_pv_merra_ryberg2019(placements, merra_path, global_solar_atlas_ghi_path, module="WINAICO WSx-240P6", elev=300, tracking="fixed",
@@ -66,19 +78,21 @@ def openfield_pv_merra_ryberg2019(placements, merra_path, global_solar_atlas_ghi
         wf.apply_elevation(elev)
 
     wf.read(
-        variables=['surface_wind_speed',
-                   "surface_pressure",
-                   "surface_air_temperature",
-                   "surface_dew_temperature",
-                   "global_horizontal_irradiance"],
+        variables=[
+            "surface_wind_speed",
+            "surface_pressure",
+            "surface_air_temperature",
+            "surface_dew_temperature",
+            "global_horizontal_irradiance",
+        ],
         source_type="MERRA",
         source=merra_path,
         set_time_index=True,
-        verbose=False
+        verbose=False,
     )
 
     wf.adjust_variable_to_long_run_average(
-        variable='global_horizontal_irradiance',
+        variable="global_horizontal_irradiance",
         source_long_run_average=rk_weather.MerraSource.LONG_RUN_AVERAGE_GHI,
         real_long_run_average=global_solar_atlas_ghi_path,
         real_lra_scaling=1000 / 24,  # cast to hourly average kWh
@@ -87,7 +101,7 @@ def openfield_pv_merra_ryberg2019(placements, merra_path, global_solar_atlas_ghi
     wf.determine_solar_position()
     wf.filter_positive_solar_elevation()
     wf.determine_extra_terrestrial_irradiance(model="spencer", solar_constant=1370)
-    wf.determine_air_mass(model='kastenyoung1989')
+    wf.determine_air_mass(model="kastenyoung1989")
     wf.apply_DIRINT_model()
     wf.diffuse_horizontal_irradiance_from_trigonometry()
 
@@ -106,12 +120,27 @@ def openfield_pv_merra_ryberg2019(placements, merra_path, global_solar_atlas_ghi
     if inverter is not None:
         wf.apply_inverter_losses(inverter=inverter, **inverter_kwargs)
 
-    wf.apply_loss_factor(0.20, variables=['capacity_factor', 'total_system_generation'])
+    wf.apply_loss_factor(0.20, variables=["capacity_factor", "total_system_generation"])
 
-    return wf.to_xarray(output_netcdf_path=output_netcdf_path, output_variables=output_variables)
+    return wf.to_xarray(
+        output_netcdf_path=output_netcdf_path, output_variables=output_variables
+    )
 
 
-def openfield_pv_era5_unvalidated(placements, era5_path, global_solar_atlas_ghi_path, global_solar_atlas_dni_path, module="WINAICO WSx-240P6", elev=300, tracking="fixed", inverter=None, inverter_kwargs={}, tracking_args={}, output_netcdf_path=None, output_variables=None):
+def openfield_pv_era5_unvalidated(
+    placements,
+    era5_path,
+    global_solar_atlas_ghi_path,
+    global_solar_atlas_dni_path,
+    module="WINAICO WSx-240P6",
+    elev=300,
+    tracking="fixed",
+    inverter=None,
+    inverter_kwargs={},
+    tracking_args={},
+    output_netcdf_path=None,
+    output_variables=None,
+):
     """
 
     openfield_pv_era5_unvalidated(placements, era5_path, global_solar_atlas_ghi_path, global_solar_atlas_dni_path, module="WINAICO WSx-240P6", elev=300, tracking="fixed", inverter=None, inverter_kwargs={}, tracking_args={}, output_netcdf_path=None, output_variables=None)
@@ -178,16 +207,18 @@ def openfield_pv_era5_unvalidated(placements, era5_path, global_solar_atlas_ghi_
         wf.apply_elevation(elev)
 
     wf.read(
-        variables=["global_horizontal_irradiance",
-                   "direct_horizontal_irradiance",
-                   "surface_wind_speed",
-                   "surface_pressure",
-                   "surface_air_temperature",
-                   "surface_dew_temperature", ],
+        variables=[
+            "global_horizontal_irradiance",
+            "direct_horizontal_irradiance",
+            "surface_wind_speed",
+            "surface_pressure",
+            "surface_air_temperature",
+            "surface_dew_temperature",
+        ],
         source_type="ERA5",
         source=era5_path,
         set_time_index=True,
-        verbose=False
+        verbose=False,
     )
 
     wf.determine_solar_position()
@@ -196,21 +227,21 @@ def openfield_pv_era5_unvalidated(placements, era5_path, global_solar_atlas_ghi_
     wf.direct_normal_irradiance_from_trigonometry()
 
     wf.adjust_variable_to_long_run_average(
-        variable='global_horizontal_irradiance',
+        variable="global_horizontal_irradiance",
         source_long_run_average=rk_weather.Era5Source.LONG_RUN_AVERAGE_GHI,
         real_long_run_average=global_solar_atlas_ghi_path,
         real_lra_scaling=1000 / 24,  # cast to hourly average kWh
     )
 
     wf.adjust_variable_to_long_run_average(
-        variable='direct_normal_irradiance',
+        variable="direct_normal_irradiance",
         source_long_run_average=rk_weather.Era5Source.LONG_RUN_AVERAGE_DNI,
         real_long_run_average=global_solar_atlas_dni_path,
         real_lra_scaling=1000 / 24,  # cast to hourly average kWh
     )
 
     wf.determine_extra_terrestrial_irradiance(model="spencer", solar_constant=1370)
-    wf.determine_air_mass(model='kastenyoung1989')
+    wf.determine_air_mass(model="kastenyoung1989")
 
     wf.diffuse_horizontal_irradiance_from_trigonometry()
 
@@ -229,14 +260,28 @@ def openfield_pv_era5_unvalidated(placements, era5_path, global_solar_atlas_ghi_
     if inverter is not None:
         wf.apply_inverter_losses(inverter=inverter, **inverter_kwargs)
 
-    wf.apply_loss_factor(0.20, variables=['capacity_factor', 'total_system_generation'])
+    wf.apply_loss_factor(0.20, variables=["capacity_factor", "total_system_generation"])
 
-    wf.make_mean(['capacity_factor', 'total_system_generation'])
+    wf.make_mean(["capacity_factor", "total_system_generation"])
 
-    return wf.to_xarray(output_netcdf_path=output_netcdf_path, output_variables=output_variables)
+    return wf.to_xarray(
+        output_netcdf_path=output_netcdf_path, output_variables=output_variables
+    )
 
 
-def openfield_pv_sarah_unvalidated(placements, sarah_path, era5_path, module="WINAICO WSx-240P6", elev=300, tracking="fixed", inverter=None, inverter_kwargs={}, tracking_args={}, output_netcdf_path=None, output_variables=None):
+def openfield_pv_sarah_unvalidated(
+    placements,
+    sarah_path,
+    era5_path,
+    module="WINAICO WSx-240P6",
+    elev=300,
+    tracking="fixed",
+    inverter=None,
+    inverter_kwargs={},
+    tracking_args={},
+    output_netcdf_path=None,
+    output_variables=None,
+):
     """
 
     openfield_pv_sarah_unvalidated(placements, sarah_path, era5_path, module="WINAICO WSx-240P6", elev=300, tracking="fixed", inverter=None, inverter_kwargs={}, tracking_args={}, output_netcdf_path=None, output_variables=None)
@@ -302,29 +347,30 @@ def openfield_pv_sarah_unvalidated(placements, sarah_path, era5_path, module="WI
         wf.apply_elevation(elev)
 
     wf.read(
-        variables=["direct_normal_irradiance",
-                   "global_horizontal_irradiance"],
+        variables=["direct_normal_irradiance", "global_horizontal_irradiance"],
         source_type="SARAH",
         source=sarah_path,
         set_time_index=True,
-        verbose=False
+        verbose=False,
     )
 
     wf.read(
-        variables=["surface_wind_speed",
-                   "surface_pressure",
-                   "surface_air_temperature",
-                   "surface_dew_temperature", ],
+        variables=[
+            "surface_wind_speed",
+            "surface_pressure",
+            "surface_air_temperature",
+            "surface_dew_temperature",
+        ],
         source_type="ERA5",
         source=era5_path,
         set_time_index=False,
-        verbose=False
+        verbose=False,
     )
 
     wf.determine_solar_position()
     wf.filter_positive_solar_elevation()
     wf.determine_extra_terrestrial_irradiance(model="spencer", solar_constant=1370)
-    wf.determine_air_mass(model='kastenyoung1989')
+    wf.determine_air_mass(model="kastenyoung1989")
 
     wf.diffuse_horizontal_irradiance_from_trigonometry()
 
@@ -343,6 +389,9 @@ def openfield_pv_sarah_unvalidated(placements, sarah_path, era5_path, module="WI
     if inverter is not None:
         wf.apply_inverter_losses(inverter=inverter, **inverter_kwargs)
 
-    wf.apply_loss_factor(0.20, variables=['capacity_factor', 'total_system_generation'])
+    wf.apply_loss_factor(0.20, variables=["capacity_factor", "total_system_generation"])
 
-    return wf.to_xarray(output_netcdf_path=output_netcdf_path, output_variables=output_variables)
+    return wf.to_xarray(
+        output_netcdf_path=output_netcdf_path, output_variables=output_variables
+    )
+
