@@ -217,10 +217,16 @@ class Era5Source(NCSource):
             and "v<X>"
 
         TODO: Update function to also be able to handle raw ERA5 inputs for u & v
-        """
-        return self.load(
-            "ws{}".format(self.SURFACE_WIND_SPEED_HEIGHT),
-            "surface_wind_speed")
+        """        
+        combined_wind_speed_name = "ws{}".format(self.SURFACE_WIND_SPEED_HEIGHT)
+
+        if combined_wind_speed_name in self.variables.index:
+            self.load(
+                combined_wind_speed_name,
+                "surface_wind_speed")
+        else:
+            self.data["surface_wind_speed"] = self._load_wind_speed(self.SURFACE_WIND_SPEED_HEIGHT)
+        return self.data["surface_wind_speed"]
 
     def sload_wind_speed_at_100m(self):
         """Standard loader function for the variable 'wind_speed_at_100m'
