@@ -318,16 +318,21 @@ class WorkflowManager:
     def make_mean(
         self, variables: Union[str, List[str]] = ["capacity_factor"], fill_na=None
     ):
-        """"""
+        """Compute the mean of the given variables with optional NAN filling"""
         if not isinstance(variables, list):
             variables = [
                 variables,
             ]
 
         for var in variables:
-            var_data = self.sim_data[var]
+            if self._time_sel_.all():
+                var_data = self.sim_data[var]
+            else:
+                var_data = np.full((len(self.time_index), self.locs.count), np.nan)
+                var_data[self._time_sel_, :] = self.sim_data[var]
+
             if fill_na is not None:
-                var_data = np.where(np.isnan(var_data), 0, var_data)
+                var_data = np.where(np.isnan(var_data), fill_na, var_data)
             self.placements["mean_" + var] = var_data.mean(axis=0)
 
         return self
