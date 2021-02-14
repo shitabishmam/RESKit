@@ -538,7 +538,23 @@ def distribute_workflow(
         )
 
         for placement_sub_group in _split_locs(placement_group, kmeans_groups_level2):
-            placement_groups.append(placement_sub_group)
+            if placement_sub_group.shape[0] > max_batch_size[1]:
+                groups_level3 = int(
+                    np.ceil(placement_sub_group.shape[0] / max_batch_size[1])
+                )
+                groups_level3_members = placement_sub_group.shape[0] // groups_level3
+
+                placement_groups.extend(
+                    [
+                        placement_sub_group.iloc[
+                            i * groups_level3_members : (i + 1) * groups_level3_members
+                        ]
+                        for i in range(groups_level3)
+                    ]
+                )
+
+            else:
+                placement_groups.append(placement_sub_group)
 
     print(f"  Found: {len(placement_groups)} simulation groups")
 
@@ -563,7 +579,10 @@ def distribute_workflow(
 
     xdss = []
     for result in results:
-        xdss.append(result.get())
+        output = result.get()
+        xdss.append(output)
+        if intermediate_output_dir is not None:
+            print(f"  FINISHED: {output}")
 
     pool.close()
     pool.join()
