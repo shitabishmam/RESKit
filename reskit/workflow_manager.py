@@ -94,7 +94,7 @@ class WorkflowManager:
         set_time_index: bool = False,
         spatial_interpolation_mode: str = "bilinear",
         temporal_reindex_method: str = "nearest",
-        **kwargs
+        **kwargs,
     ):
         """Reads the specified variables from the NetCDF4-style weather dataset, and then extracts
         those variables for each of the coordinates configured in `.placements`. The resulting
@@ -323,7 +323,7 @@ class WorkflowManager:
             ]
 
         for var in variables:
-            self.placements["mean_" + var] = self.sim_data[var].mean()
+            self.placements["mean_" + var] = self.sim_data[var].mean(axis=0)
 
         return self
 
@@ -451,7 +451,7 @@ def distribute_workflow(
     jobs: int = 2,
     max_batch_size: int = None,
     intermediate_output_dir: str = None,
-    **kwargs
+    **kwargs,
 ) -> xarray.Dataset:
     """Distributes a RESKit simulation workflow across multiple CPUs
 
@@ -508,6 +508,7 @@ def distribute_workflow(
     )
 
     # Split placements into groups
+    print("SPLITTING INTO SIMULATION GROUPS...")
     if "geom" in placements.columns:
         locs = gk.LocationSet(placements)
         placements["lat"] = locs.lats
@@ -524,15 +525,25 @@ def distribute_workflow(
     if max_batch_size is None:
         max_batch_size = int(np.ceil(placements.shape[0] / jobs))
 
-    kmeans_groups = int(np.ceil(placements.shape[0] / max_batch_size))
+    if not isinstance(max_batch_size, tuple):
+        max_batch_size = max_batch_size, max_batch_size
+
+    kmeans_groups = int(np.ceil(placements.shape[0] / max_batch_size[0]))
+
+    print(f"  Initial Guess: {kmeans_groups} sets")
     placement_groups = []
     for placement_group in _split_locs(placements, kmeans_groups):
-        kmeans_groups_level2 = int(np.ceil(placement_group.shape[0] / max_batch_size))
+        kmeans_groups_level2 = int(
+            np.ceil(placement_group.shape[0] / max_batch_size[1])
+        )
 
         for placement_sub_group in _split_locs(placement_group, kmeans_groups_level2):
             placement_groups.append(placement_sub_group)
 
+    print(f"  Found: {len(placement_groups)} simulation groups")
+
     # Do simulations
+    print("SUBMITTING JOBS")
     pool = Pool(jobs)
 
     results = []
