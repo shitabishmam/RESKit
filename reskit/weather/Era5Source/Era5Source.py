@@ -79,21 +79,19 @@ class Era5Source(NCSource):
     SURFACE_WIND_SPEED_HEIGHT = 10
 
     LONG_RUN_AVERAGE_WINDSPEED = join(
-        dirname(__file__),
-        "data",
-        "ERA5_wind_speed_100m_mean.tiff")
+        dirname(__file__), "data", "ERA5_wind_speed_100m_mean.tiff"
+    )
     LONG_RUN_AVERAGE_WINDDIR = join(
-        dirname(__file__),
-        "data",
-        "ERA5_wind_direction_100m_mean.tiff")
+        dirname(__file__), "data", "ERA5_wind_direction_100m_mean.tiff"
+    )
     LONG_RUN_AVERAGE_GHI = join(
-        dirname(__file__),
-        "data",
-        "ERA5_surface_solar_radiation_downwards_mean.tiff")
+        dirname(__file__), "data", "ERA5_surface_solar_radiation_downwards_mean.tiff"
+    )
     LONG_RUN_AVERAGE_DNI = join(
         dirname(__file__),
         "data",
-        "ERA5_total_sky_direct_solar_radiation_at_surface_mean.tiff")
+        "ERA5_total_sky_direct_solar_radiation_at_surface_mean.tiff",
+    )
 
     MAX_LON_DIFFERENCE = 0.26
     MAX_LAT_DIFFERENCE = 0.26
@@ -159,28 +157,27 @@ class Era5Source(NCSource):
             tz=None,
             flip_lat=True,
             time_offset_minutes=30,
-            **kwargs)
+            **kwargs
+        )
 
     loc_to_index = NCSource._loc_to_index_rect(0.25, 0.25)
 
     # STANDARD LOADERS
-    def _load_wind_speed(self, height:int):
+    def _load_wind_speed(self, height: int):
 
         u_name = "u{}".format(height)
         v_name = "v{}".format(height)
 
         self.load(u_name)
         self.load(v_name)
-        return np.sqrt(self.data[u_name]**2 + self.data[v_name]**2)  # total speed
+        return np.sqrt(self.data[u_name] ** 2 + self.data[v_name] ** 2)  # total speed
 
     def sload_boundary_layer_height(self):
         """Standard loader function for the variable 'boundary_layer_height' in meters 
         from the surface
 
         """
-        return self.load(
-            "blh",
-            "boundary_layer_height")
+        return self.load("blh", "boundary_layer_height")
 
     def sload_elevated_wind_speed(self):
         """Standard loader function for the variable 'elevated_wind_speed'
@@ -198,11 +195,11 @@ class Era5Source(NCSource):
         combined_wind_speed_name = "ws{}".format(self.ELEVATED_WIND_SPEED_HEIGHT)
 
         if combined_wind_speed_name in self.variables.index:
-            self.load(
-                combined_wind_speed_name,
-                "elevated_wind_speed")
+            self.load(combined_wind_speed_name, "elevated_wind_speed")
         else:
-            self.data["elevated_wind_speed"] = self._load_wind_speed(self.ELEVATED_WIND_SPEED_HEIGHT)
+            self.data["elevated_wind_speed"] = self._load_wind_speed(
+                self.ELEVATED_WIND_SPEED_HEIGHT
+            )
         return self.data["elevated_wind_speed"]
 
     def sload_surface_wind_speed(self):
@@ -217,15 +214,15 @@ class Era5Source(NCSource):
             and "v<X>"
 
         TODO: Update function to also be able to handle raw ERA5 inputs for u & v
-        """        
+        """
         combined_wind_speed_name = "ws{}".format(self.SURFACE_WIND_SPEED_HEIGHT)
 
         if combined_wind_speed_name in self.variables.index:
-            self.load(
-                combined_wind_speed_name,
-                "surface_wind_speed")
+            self.load(combined_wind_speed_name, "surface_wind_speed")
         else:
-            self.data["surface_wind_speed"] = self._load_wind_speed(self.SURFACE_WIND_SPEED_HEIGHT)
+            self.data["surface_wind_speed"] = self._load_wind_speed(
+                self.SURFACE_WIND_SPEED_HEIGHT
+            )
         return self.data["surface_wind_speed"]
 
     def sload_wind_speed_at_100m(self):
@@ -275,7 +272,7 @@ class Era5Source(NCSource):
         Automatically reads the variable "sp" from the given ERA5 source and saves it as the 
         variable 'surface_pressure' in the data library
         """
-        return self.load("sp", name='surface_pressure')
+        return self.load("sp", name="surface_pressure")
 
     def sload_surface_air_temperature(self):
         """Standard loader function for the variable 'surface_air_temperature'
@@ -285,7 +282,9 @@ class Era5Source(NCSource):
 
         Temperature values are also converted from kelvin to degrees celsius
         """
-        return self.load("t2m", name="surface_air_temperature", processor=lambda x: x - 273.15)
+        return self.load(
+            "t2m", name="surface_air_temperature", processor=lambda x: x - 273.15
+        )
 
     def sload_surface_dew_temperature(self):
         """Standard loader function for the variable 'surface_dew_temperature'
@@ -295,7 +294,9 @@ class Era5Source(NCSource):
 
         Temperature values are also converted from kelvin to degrees celsius
         """
-        return self.load("d2m", name="surface_dew_temperature", processor=lambda x: x - 273.15)
+        return self.load(
+            "d2m", name="surface_dew_temperature", processor=lambda x: x - 273.15
+        )
 
     def sload_direct_horizontal_irradiance(self):
         """Standard loader function for the variable 'direct_horizontal_irradiance'
