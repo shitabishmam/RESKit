@@ -325,7 +325,7 @@ class WorkflowManager:
             ]
 
         for var in variables:
-            if self._time_sel_.all():
+            if self._time_sel_ is None or self._time_sel_.all():
                 var_data = self.sim_data[var]
             else:
                 var_data = np.full((len(self.time_index), self.locs.count), np.nan)
