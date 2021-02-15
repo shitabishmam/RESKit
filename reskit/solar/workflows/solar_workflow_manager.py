@@ -1113,6 +1113,7 @@ class SolarWorkflowManager(WorkflowManager):
             ]
         )
 
+        # TODO: Using a dynamic cell_temp min and max will mean results will change slghtly depending on the simulation group. Not good!
         _temp = np.linspace(cell_temp.min(), cell_temp.max(), 100)
         poaM, tempM = np.meshgrid(_poa, _temp)
 
