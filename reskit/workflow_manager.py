@@ -391,9 +391,9 @@ class WorkflowManager:
         xds = OrderedDict()
         encoding = dict()
 
-        if "location_id" in self.placements.columns:
-            location_coords = self.placements["location_id"].copy()
-            del self.placements["location_id"]
+        if "loc_id" in self.placements.columns:
+            location_coords = self.placements["loc_id"].copy()
+            del self.placements["loc_id"]
         else:
             location_coords = np.arange(self.placements.shape[0])
 
@@ -535,8 +535,10 @@ def distribute_workflow(
             np.column_stack([placements.lon.values, placements.lat.values])
         )
 
+    if not "loc_id" in placements.columns:
+        placements["loc_id"] = np.arange(placements.shape[0])
+
     placements.index = locs
-    placements["location_id"] = np.arange(placements.shape[0])
 
     if max_batch_size is None:
         max_batch_size = int(np.ceil(placements.shape[0] / jobs))
@@ -594,7 +596,6 @@ def distribute_workflow(
                 func=workflow_function, args=(placement_group,), kwds=kwargs_
             )
         )
-        # results.append(workflow_function(placement_group, **kwargs_ ))
 
     xdss = []
     for result in results:
