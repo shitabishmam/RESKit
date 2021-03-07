@@ -391,9 +391,9 @@ class WorkflowManager:
         xds = OrderedDict()
         encoding = dict()
 
-        if "loc_id" in self.placements.columns:
-            location_coords = self.placements["loc_id"].copy()
-            del self.placements["loc_id"]
+        if "location" in self.placements.columns:
+            location_coords = self.placements["location"].copy()
+            del self.placements["location"]
         else:
             location_coords = np.arange(self.placements.shape[0])
 
@@ -535,8 +535,8 @@ def distribute_workflow(
             np.column_stack([placements.lon.values, placements.lat.values])
         )
 
-    if not "loc_id" in placements.columns:
-        placements["loc_id"] = np.arange(placements.shape[0])
+    if not "location" in placements.columns:
+        placements["location"] = np.arange(placements.shape[0])
 
     placements.index = locs
 
@@ -623,7 +623,7 @@ def load_workflow_result(datasets, loader=xarray.load_dataset, sortby="location"
             datasets = glob(datasets)
 
     if len(datasets) == 1:
-        ds = xarray.load_dataset(datasets[0]).sortby("locations")
+        ds = xarray.load_dataset(datasets[0]).sortby("location")
     else:
         ds = xarray.concat(map(loader, datasets), dim="location")
 
