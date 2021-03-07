@@ -774,13 +774,13 @@ class SolarWorkflowManager(WorkflowManager):
                 bad_poa, 0, self.sim_data["poa_direct"]
             )
             self.sim_data["poa_diffuse"] = np.where(
-                bad_poa, 0, self.sim_data["poa_direct"]
+                bad_poa, 0, self.sim_data["poa_diffuse"]
             )
             self.sim_data["poa_sky_diffuse"] = np.where(
-                bad_poa, 0, self.sim_data["poa_direct"]
+                bad_poa, 0, self.sim_data["poa_sky_diffuse"]
             )
             self.sim_data["poa_ground_diffuse"] = np.where(
-                bad_poa, 0, self.sim_data["poa_direct"]
+                bad_poa, 0, self.sim_data["poa_ground_diffuse"]
             )
 
     def cell_temperature_from_sapm(self, mounting="glass_open_rack"):
