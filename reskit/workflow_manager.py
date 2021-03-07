@@ -411,7 +411,7 @@ class WorkflowManager:
                         break
             if write:
                 xds[c] = xarray.DataArray(
-                    self.placements[c],
+                    self.placements[c].values,
                     dims=["location"],
                     coords=dict(location=location_coords),
                 )
