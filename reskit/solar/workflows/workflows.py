@@ -1,4 +1,6 @@
 from typing import Dict, List, Union
+import pandas as pd
+import xarray as xr
 
 from ... import weather as rk_weather
 from .solar_workflow_manager import SolarWorkflowManager
@@ -285,10 +287,10 @@ def _convert_to_probability_dict(value: Union[float, List[float], Dict[float, fl
 
 
 def rooftop_pv_era5_unvalidated(
-    placements,
-    era5_path,
-    global_solar_atlas_ghi_path,
-    global_solar_atlas_dni_path,
+    placements: pd.DataFrame,
+    era5_path: str,
+    global_solar_atlas_ghi_path: str,
+    global_solar_atlas_dni_path: str,
     azimuths: Union[float, List[float], Dict[float, float]] = [90, 135, 180, 225, 270],
     tilts: Union[float, List[float], Dict[float, float]] = {
         28.15: 0.022713075351,
@@ -298,14 +300,81 @@ def rooftop_pv_era5_unvalidated(
         46.92: 0.135923920404,
         51.857: 0.022723846777,
     },
-    module="LG Electronics LG370Q1C-A5",
-    elev=300,
-    inverter=None,
-    inverter_kwargs={},
-    output_netcdf_path=None,
-    output_variables=None,
-):
-    """
+    module: str = "LG Electronics LG370Q1C-A5",
+    elev: Union[str, float] = 300,
+    inverter: str = None,
+    inverter_kwargs: dict = {},
+    output_netcdf_path: str = None,
+    output_variables: List[str] = None,
+) -> xr.Dataset:
+    """Simulates fixed rooftop-mounted PV systems over an array of tilt and azimuth orientations (which correlate to orientation of rooftops within the simulation context). The final capacity factor timeseires is averaged over all orientations
+
+    Parameters
+    ----------
+    placements : pd.DataFrame
+        A pandas DataFrame describing the placements to be simulated
+        * The following columns must be present: "geom" (or "lat" and "lon"), "capacity"
+
+    era5_path : str
+        A local filepath to the ERA5-weather data to use during simulation
+        * The following ERA5 variables should be present: 
+            * Global Horizontal Irradiance (ssrd)
+            * Direct Horizontal Irradiance (fdir)
+            * Surface windspeed (u2m, v2m)
+            * Surface air temperature (t2m)
+            * Surface dew-point temperature (d2m)
+            * Surface pressure (sd)
+
+    global_solar_atlas_ghi_path : str
+        A local filepath to the average GHI raster dataset from Global Solar Atlas
+
+    global_solar_atlas_dni_path : str
+        A local filepath to the average DNI raster dataset from Global Solar Atlas
+
+    azimuths : Union[float, List[float], Dict[float, float]], optional
+        The array of azimuth angles to simulate over
+        * If given as a float, then only the one azimuth is used for all simulations
+        * If given as a list of floats, then all azimuths are simulated assuming a uniform distribution
+        * If given as a dictionary, then all azimuths (keys) are simulated with the given weights (values)
+        
+    tilts : Union[float, List[float], Dict[float, float]], optional
+        The array of tilt angles to simulate over
+        * If given as a float, then only the one tilt is used for all simulations
+        * If given as a list of floats, then all tilts are simulated assuming a uniform distribution
+        * If given as a dictionary, then all tilts (keys) are simulated with the given weights (values)
+
+    module : str, optional
+        The module to use during simulation, by default "LG Electronics LG370Q1C-A5"
+
+    elev : Union[str, float], optional
+        An elevation value to use for each simulation point, by default 300. Note, this will have a minor impact on the solar position calculation
+        * If given as a float, then all simulation points will use the given elevation
+        * If given as a path to a raster digital elevation model (DEM) file, then the geokit module will be used to extract elevation values from, that file for each simulation point defined in `placements`
+
+    inverter : str, optional
+        The inverter to use during simulation, by default None
+        * If given as `None`, then an inverter will not be simulated at all (i.e. DC output power is assumed to be the same as AC output power)
+        * See `reskit.solar.SolarWorkflowManager.apply_inverter_losses` for more usage information.
+
+    inverter_kwargs : dict, optional
+        keyword arguments to pass on to `reskit.solar.SolarWorkflowManager.apply_inverter_losses`, when `inverter` is not equal to None. By default {}
+
+    output_netcdf_path : str, optional
+        If given, the filepath to save an output NETCDF4 file at, by default None
+
+    output_variables : List[str], optional
+        Output variables of the simulation that you want to include in the output NETCDF4, by default None
+        * Only effective when `output_netcdf_path` is not None
+        * If left as None, then all available variables are included
+
+    Returns
+    -------
+    xr.DataSet
+        The simulation results formulated as an xarray dataset. Key output variables include:
+            * mean_capacity_factor: The average capacity factor of each placement over the whole time domain
+            * mean_total_system_generation: The average generation (kWh) of each placement over the whole time domain
+            * capacity_factor: The capacity factor of each placement at each time step
+            * total_system_generation: The generation (kWh) of each placement at each time step
     """
     # Condition "tilts" and "azimuths" input
     tilts = _convert_to_probability_dict(tilts)
