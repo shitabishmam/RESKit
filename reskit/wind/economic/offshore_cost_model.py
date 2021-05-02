@@ -2,7 +2,7 @@ import numpy as np
 from .onshore_cost_model import onshore_tcc
 
 
-def offshore_turbine_capex(capacity, hub_height, rotor_diam, depth, distance_to_shore, distance_to_bus=3, foundation="monopile", mooring_count=3, anchor="DEA", turbine_count=80, turbine_spacing=5, turbine_row_spacing=9):
+def offshore_turbine_capex(capacity, hub_height, rotor_diam, depth, distance_to_shore, distance_to_bus=3, foundation="monopile", mooring_count=3, anchor="DEA", turbine_count=80, turbine_spacing=5, turbine_row_spacing=9, base_capex=2300 * 9400, base_capacity=9400, base_hub_height=135, base_rotor_diam=210, base_foundation="monopile", base_depth=40, base_distance_to_shore=60, ):
     """
     A cost and scaling model (CSM) to calculate the total cost of a 3-bladed, direct drive offshore wind turbine according to the cost model proposed by Fingersh et al. [1] and Maples et al. [2].
     The CSM distinguises between seaflor-fixed foundation types; "monopile" and "jacket" and floating foundation types; "semisubmersible" and "spar".
@@ -48,6 +48,28 @@ def offshore_turbine_capex(capacity, hub_height, rotor_diam, depth, distance_to_
     turbine_row_spacing : numeric, optional
         Spacing distance between rows of turbines. The value must be a multiplyer of rotor diameter. CSM valid for the range [4-10], by default 9
 
+    base_capex : numeric, optional
+        Capex [€] of the baseline turbine, by default 2300 * 9400.
+
+    base_capacity : numeric, optional
+        Capacity [kW] of the baseline turbine to which the baseline capex is calibrated to, by default 9400.
+
+    base_hub_height : numeric, optional
+        Hub height [m] of the baseline turbine to which the baseline capex is calibrated to, by default 135.
+
+    base_rotor_diam : numeric, optional
+        Rotor diameter [m] of the baseline turbine to which the baseline capex is calibrated to, by default 210.
+
+    base_foundation : numeric, optional
+        Foundation type of the baseline turbine to which the baseline capex is calibrated to, by default 'monopile'.
+
+    base_depth : numeric, optional
+        Depth [m] of the baseline turbine to which the baseline capex is calibrated to, by default 40.
+
+    base_distance_to_shore : numeric, optional
+        Distance to shore [km] of the baseline turbine to which the baseline capex is calibrated to, by default 60.
+
+
     Returns
     --------
     numeric or array-like
@@ -87,22 +109,38 @@ def offshore_turbine_capex(capacity, hub_height, rotor_diam, depth, distance_to_
     distance_to_shore = np.array(distance_to_shore)
     distance_to_bus = np.array(distance_to_bus)
 
-    # COMPUTE COSTS
-    tcc = onshore_tcc(cp=cp * 1000, hh=hh, rd=rd)
-    tcc *= 0.7719832742256006
+    # Determine cost shares based on foundation type
+    if foundation == 'monopile' or foundation == 'jacket':
+        tcc_share = 32.9
+        bos_share= 46.2 
+        fin_share= 20.9
+    else:
+        tcc_share = 23.6
+        bos_share= 60.8
+        fin_share= 15.6 
 
-    bos = offshore_bos(cp=cp, rd=rd, hh=hh, depth=depth, distance_to_shore=distance_to_shore, distance_to_bus=distance_to_bus, foundation=foundation,
+    # Turbine capital cost (tcc)
+    tcc_scaling = base_capex / onshore_tcc(cp=base_capacity, hh=base_hub_height, rd=base_rotor_diam)
+    tcc = tcc_share * tcc_scaling * onshore_tcc(cp=cp * 1000, hh=hh, rd=rd)
+
+    # Balance of system cost (bos)
+    bos_base = offshore_bos(cp=base_capacity/1000, rd=base_rotor_diam, hh=base_hub_height, depth=base_depth, 
+                            distance_to_shore=base_distance_to_shore, distance_to_bus=distance_to_bus, foundation=base_foundation,
+                            mooring_count=mooring_count, anchor=anchor, turbine_count=turbine_count,
+                            turbine_spacing=turbine_spacing, turbine_row_spacing=turbine_row_spacing, )
+
+    bos_scaling = base_capex / bos_base
+
+    bos = offshore_bos(cp=cp, rd=rd, hh=hh, depth=depth, 
+                       distance_to_shore=distance_to_shore, distance_to_bus=distance_to_bus, foundation=foundation,
                        mooring_count=mooring_count, anchor=anchor, turbine_count=turbine_count,
                        turbine_spacing=turbine_spacing, turbine_row_spacing=turbine_row_spacing, )
+    bos *= bos_share * bos_scaling
 
-    bos *= 0.3669156255898912
+    # Include fin_share
+    total_costs = (tcc + bos) / (100 - fin_share)
 
-    if foundation == 'monopile' or foundation == 'jacket':
-        fin = (tcc + bos) * 20.9 / (32.9 + 46.2)  # Scaled according to tcc [7]
-    else:
-        fin = (tcc + bos) * 15.6 / (60.8 + 23.6)  # Scaled according to tcc [7]
-    return tcc + bos + fin
-    # return np.array([tcc,bos,fin])
+    return total_costs
 
 
 def offshore_bos(cp, rd, hh, depth, distance_to_shore, distance_to_bus, foundation, mooring_count, anchor, turbine_count, turbine_spacing, turbine_row_spacing):
@@ -343,10 +381,9 @@ def offshore_bos(cp, rd, hh, depth, distance_to_shore, distance_to_bus, foundati
         mooringAndAnchorCost = mooringLength * mooringCostRate + anchorCost
 
     if fixedType:
-        if cp > 4:
-            secondarySteelSubstructureMass = 40 + (0.8 * (18 + depth))
-        else:
-            secondarySteelSubstructureMass = 35 + (0.8 * (18 + depth))
+        secondarySteelSubstructureMass = 40 + (0.8 * (18 + depth))
+        # Subtract 5 for light structures/ small capacities
+        secondarySteelSubstructureMass -= (cp <= 4) * 5
 
     elif foundation == 'spar':
         secondarySteelSubstructureMass = np.exp(3.58 + 0.196 * np.power(cp, 0.5) * np.log(cp) + 0.00001 * depth * np.log(depth))

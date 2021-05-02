@@ -11,4 +11,4 @@ def test_offshore_turbine_capex():
         distance_to_shore=15
     )
 
-    assert np.isclose(capex / 4200, 1949.3177174432028)
+    assert np.isclose(capex / 4200, 1944.038069910171)

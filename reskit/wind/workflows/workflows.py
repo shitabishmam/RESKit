@@ -1,9 +1,17 @@
 from ... import weather as rk_weather
 from ... import util as rk_util
 from .wind_workflow_manager import WindWorkflowManager
+import numpy as np
 
 
-def onshore_wind_merra_ryberg2019_europe(placements, merra_path, gwa_50m_path, clc2012_path, output_netcdf_path=None, output_variables=None):
+def onshore_wind_merra_ryberg2019_europe(
+    placements,
+    merra_path,
+    gwa_50m_path,
+    clc2012_path,
+    output_netcdf_path=None,
+    output_variables=None,
+):
     # TODO: Add range limitation over Europe by checking placements
     """
     Simulates onshore wind generation in Europe using NASA's MERRA2 database [1].
@@ -39,32 +47,30 @@ def onshore_wind_merra_ryberg2019_europe(placements, merra_path, gwa_50m_path, c
     wf = WindWorkflowManager(placements)
 
     wf.read(
-        variables=['elevated_wind_speed',
-                   "surface_pressure",
-                   "surface_air_temperature"],
+        variables=[
+            "elevated_wind_speed",
+            "surface_pressure",
+            "surface_air_temperature",
+        ],
         source_type="MERRA",
         source=merra_path,
         set_time_index=True,
-        verbose=False)
-
-    wf.adjust_variable_to_long_run_average(
-        variable='elevated_wind_speed',
-        source_long_run_average=rk_weather.MerraSource.LONG_RUN_AVERAGE_WINDSPEED,
-        real_long_run_average=gwa_50m_path
+        verbose=False,
     )
 
-    wf.estimate_roughness_from_land_cover(
-        path=clc2012_path,
-        source_type="clc")
+    wf.adjust_variable_to_long_run_average(
+        variable="elevated_wind_speed",
+        source_long_run_average=rk_weather.MerraSource.LONG_RUN_AVERAGE_WINDSPEED,
+        real_long_run_average=gwa_50m_path,
+    )
+
+    wf.estimate_roughness_from_land_cover(path=clc2012_path, source_type="clc")
 
     wf.logarithmic_projection_of_wind_speeds_to_hub_height()
 
     wf.apply_air_density_correction_to_wind_speeds()
 
-    wf.convolute_power_curves(
-        scaling=0.06,
-        base=0.1
-    )
+    wf.convolute_power_curves(scaling=0.06, base=0.1)
 
     wf.simulate()
 
@@ -72,10 +78,14 @@ def onshore_wind_merra_ryberg2019_europe(placements, merra_path, gwa_50m_path, c
         loss=lambda x: rk_util.low_generation_loss(x, base=0.0, sharpness=5.0)
     )
 
-    return wf.to_xarray(output_netcdf_path=output_netcdf_path, output_variables=output_variables)
+    return wf.to_xarray(
+        output_netcdf_path=output_netcdf_path, output_variables=output_variables
+    )
 
 
-def offshore_wind_merra_caglayan2019(placements, merra_path, output_netcdf_path=None, output_variables=None):
+def offshore_wind_merra_caglayan2019(
+    placements, merra_path, output_netcdf_path=None, output_variables=None
+):
     """
     Simulates offshore wind generation using NASA's MERRA2 database [1].
 
@@ -104,11 +114,12 @@ def offshore_wind_merra_caglayan2019(placements, merra_path, output_netcdf_path=
     wf = WindWorkflowManager(placements)
 
     wf.read(
-        variables=['elevated_wind_speed', ],
+        variables=["elevated_wind_speed",],
         source_type="MERRA",
         source=merra_path,
         set_time_index=True,
-        verbose=False)
+        verbose=False,
+    )
 
     wf.set_roughness(0.0002)
 
@@ -116,19 +127,25 @@ def offshore_wind_merra_caglayan2019(placements, merra_path, output_netcdf_path=
 
     wf.convolute_power_curves(
         scaling=0.04,  # TODO: Check values with Dil
-        base=0.5       # TODO: Check values with Dil
+        base=0.5,  # TODO: Check values with Dil
     )
 
     wf.simulate()
 
     wf.apply_loss_factor(
-        loss=lambda x: rk_util.low_generation_loss(x, base=0.1, sharpness=3.5)  # TODO: Check values with Dil
+        loss=lambda x: rk_util.low_generation_loss(
+            x, base=0.1, sharpness=3.5
+        )  # TODO: Check values with Dil
     )
 
-    return wf.to_xarray(output_netcdf_path=output_netcdf_path, output_variables=output_variables)
+    return wf.to_xarray(
+        output_netcdf_path=output_netcdf_path, output_variables=output_variables
+    )
 
 
-def offshore_wind_era5_unvalidated(placements, era5_path, output_netcdf_path=None, output_variables=None):
+def offshore_wind_era5_unvalidated(
+    placements, era5_path, output_netcdf_path=None, output_variables=None
+):
     """
     Simulates offshore wind generation using NASA's ERA5 database [1].
 
@@ -156,11 +173,12 @@ def offshore_wind_era5_unvalidated(placements, era5_path, output_netcdf_path=Non
     wf = WindWorkflowManager(placements)
 
     wf.read(
-        variables=['elevated_wind_speed', ],
+        variables=["elevated_wind_speed",],
         source_type="ERA5",
         source=era5_path,
         set_time_index=True,
-        verbose=False)
+        verbose=False,
+    )
 
     wf.set_roughness(0.0002)
 
@@ -168,21 +186,34 @@ def offshore_wind_era5_unvalidated(placements, era5_path, output_netcdf_path=Non
 
     wf.convolute_power_curves(
         scaling=0.04,  # TODO: Check values with Dil
-        base=0.5       # TODO: Check values with Dil
+        base=0.5,  # TODO: Check values with Dil
     )
 
     wf.simulate()
 
     wf.apply_loss_factor(
-        loss=lambda x: rk_util.low_generation_loss(x, base=0.1, sharpness=3.5)  # TODO: Check values with Dil
+        loss=lambda x: rk_util.low_generation_loss(
+            x, base=0.1, sharpness=3.5
+        )  # TODO: Check values with Dil
     )
 
-    return wf.to_xarray(output_netcdf_path=output_netcdf_path, output_variables=output_variables)
+    return wf.to_xarray(
+        output_netcdf_path=output_netcdf_path, output_variables=output_variables
+    )
 
 
-def onshore_wind_era5_unvalidated(placements, era5_path, gwa_100m_path, esa_cci_path, output_netcdf_path=None, output_variables=None):
+def onshore_wind_era5(
+    placements,
+    era5_path,
+    gwa_100m_path,
+    esa_cci_path,
+    output_netcdf_path=None,
+    output_variables=None,
+):
     """
-    Simulates onshore wind generation using ECMWF's ERA5 database [1]
+    Simulates onshore wind generation using ECMWF's ERA5 database [1]. 
+    
+    NOTE: Validation documentation is in progress...
 
     Parameters
     ----------
@@ -214,55 +245,61 @@ def onshore_wind_era5_unvalidated(placements, era5_path, gwa_100m_path, esa_cci_
     wf = WindWorkflowManager(placements)
 
     wf.read(
-        variables=['elevated_wind_speed',
-                   "surface_pressure",
-                   "surface_air_temperature",
-                   "boundary_layer_height"],
+        variables=[
+            "elevated_wind_speed",
+            "surface_pressure",
+            "surface_air_temperature",
+            "boundary_layer_height",
+        ],
         source_type="ERA5",
         source=era5_path,
         set_time_index=True,
-        verbose=False)
-
-    wf.adjust_variable_to_long_run_average(
-        variable='elevated_wind_speed',
-        source_long_run_average=rk_weather.Era5Source.LONG_RUN_AVERAGE_WINDSPEED,
-        real_long_run_average=gwa_100m_path
+        verbose=False,
     )
 
-    wf.estimate_roughness_from_land_cover(
-        path=esa_cci_path,
-        source_type="cci")
+    wf.adjust_variable_to_long_run_average(
+        variable="elevated_wind_speed",
+        source_long_run_average=rk_weather.Era5Source.LONG_RUN_AVERAGE_WINDSPEED,
+        real_long_run_average=gwa_100m_path,
+    )
+
+    wf.estimate_roughness_from_land_cover(path=esa_cci_path, source_type="cci")
 
     wf.logarithmic_projection_of_wind_speeds_to_hub_height(
-            consider_boundary_layer_height=True)
+        consider_boundary_layer_height=True
+    )
 
     wf.apply_air_density_correction_to_wind_speeds()
 
-    wf.convolute_power_curves(
-        scaling=0.05,
-        base=0.0
-    )
+    wf.convolute_power_curves(scaling=0.08, base=0.40)
 
     # Adjust wind speeds
-    wf.sim_data['elevated_wind_speed'] = np.maximum(wf.sim_data['elevated_wind_speed']*0.80 - 0.0, 0 ) # Empirically found to improve simulation accuracy
+    wf.sim_data["elevated_wind_speed"] = np.maximum(
+        wf.sim_data["elevated_wind_speed"] * 0.75 + 1.20, 0
+    )  # Empirically found to improve simulation accuracy
 
+    # do simulation
     wf.simulate()
 
-    #wf.apply_loss_factor(
-    #    loss=lambda x: rk_util.low_generation_loss(x, base=0.0, sharpness=5.0)
-    #)
+    wf.make_mean(["capacity_factor"])
 
-    return wf.to_xarray(output_netcdf_path=output_netcdf_path, output_variables=output_variables)
-
-
-from collections import OrderedDict
-from itertools import product
-from json import dumps
-import pandas as pd
-import numpy as np
+    return wf.to_xarray(
+        output_netcdf_path=output_netcdf_path, output_variables=output_variables
+    )
 
 
-def onshore_wind_era5_unvalidated_validator(placements, era5_path, gwa_100m_path, esa_cci_path, output_path, convolution_scaling_factors=[0.06], convolution_base_factors=[0.1], loss_sharpness_factors=[5.0], loss_base_factors=[0.0], wind_speed_offsets=[0], wind_speed_scalings=[1.0]):
+def onshore_wind_era5_validator(
+    placements,
+    era5_path,
+    gwa_100m_path,
+    esa_cci_path,
+    convolution_scaling_factors=[0.06],
+    convolution_base_factors=[0.1],
+    loss_sharpness_factors=[5.0],
+    loss_base_factors=[0.0],
+    wind_speed_offsets=[0],
+    wind_speed_scalings=[1.0],
+):
     """
     Simulates onshore wind generation using ECMWF's ERA5 database [1]
 
@@ -292,113 +329,128 @@ def onshore_wind_era5_unvalidated_validator(placements, era5_path, gwa_100m_path
     [2] DTU Wind Energy. (2019). Global Wind Atlas. https://globalwindatlas.info/
     [3] ESA. Land Cover CCI Product User Guide Version 2. Tech. Rep. (2017). Available at: maps.elie.ucl.ac.be/CCI/viewer/download/ESACCI-LC-Ph2-PUGv2_2.0.pdf
     """
+    from collections import OrderedDict
+    from itertools import product
+    from json import dumps
+    import pandas as pd
+    import numpy as np
 
     wf = WindWorkflowManager(placements)
 
     wf.read(
-        variables=['elevated_wind_speed',
-                   "surface_pressure",
-                   "surface_air_temperature",
-                   "boundary_layer_height"],
+        variables=[
+            "elevated_wind_speed",
+            "surface_pressure",
+            "surface_air_temperature",
+            "boundary_layer_height",
+        ],
         source_type="ERA5",
         source=era5_path,
         set_time_index=True,
-        verbose=False)
-
-    wf.adjust_variable_to_long_run_average(
-        variable='elevated_wind_speed',
-        source_long_run_average=rk_weather.Era5Source.LONG_RUN_AVERAGE_WINDSPEED,
-        real_long_run_average=gwa_100m_path
+        verbose=False,
     )
 
-    wf.estimate_roughness_from_land_cover(
-        path=esa_cci_path,
-        source_type="cci")
+    wf.adjust_variable_to_long_run_average(
+        variable="elevated_wind_speed",
+        source_long_run_average=rk_weather.Era5Source.LONG_RUN_AVERAGE_WINDSPEED,
+        real_long_run_average=gwa_100m_path,
+    )
+
+    wf.estimate_roughness_from_land_cover(path=esa_cci_path, source_type="cci")
 
     wf.logarithmic_projection_of_wind_speeds_to_hub_height(
-            consider_boundary_layer_height=True)
+        consider_boundary_layer_height=True
+    )
 
     wf.apply_air_density_correction_to_wind_speeds()
 
     power_curves = wf.powerCurveLibrary.copy()
-    wind_speeds = wf.sim_data['elevated_wind_speed'].copy()
-    
-    with open(output_path, "w") as fo:
-        fo.write('timestamps')
-        for ts in [x.strftime("%Y-%m-%d %H:%M:%S") for x in wf.time_index]:
-            fo.write(","+ts)
-        fo.write("\n")
+    wind_speeds = wf.sim_data["elevated_wind_speed"].copy()
 
+    outputs = {}
+    for (convolution_scaling_factor, convolution_base_factor) in product(
+        convolution_scaling_factors, convolution_base_factors
+    ):
 
-        for (convolution_scaling_factor,
-            convolution_base_factor) \
-            in product(convolution_scaling_factors,
-                       convolution_base_factors):
+        # Reset power curves
+        wf.powerCurveLibrary = power_curves.copy()
 
-            # Reset power curves
-            wf.powerCurveLibrary = power_curves.copy()
-            
-            # Apply power curve convolution
-            try:
-                if not (convolution_scaling_factor == 0 and convolution_base_factor == 0):
-                    wf.convolute_power_curves(
-                        scaling=convolution_scaling_factor,
-                        base=convolution_base_factor,
+        # Apply power curve convolution
+        try:
+            if not (convolution_scaling_factor == 0 and convolution_base_factor == 0):
+                wf.convolute_power_curves(
+                    scaling=convolution_scaling_factor, base=convolution_base_factor,
                 )
-            except:
+        except Exception as e:
+            if isinstance(e, KeyboardInterrupt):
+                raise e
+
+            # output = np.full(wf.sim_data['elevated_wind_speed'].shape[0], np.nan)
+            print("  Failed :(")
+            continue
+
+        for (
+            loss_sharpness_factor,
+            loss_base_factor,
+            wind_speed_offset,
+            wind_speed_scaling,
+        ) in product(
+            loss_sharpness_factors,
+            loss_base_factors,
+            wind_speed_offsets,
+            wind_speed_scalings,
+        ):
+
+            print(
+                convolution_scaling_factor,
+                convolution_base_factor,
+                loss_sharpness_factor,
+                loss_base_factor,
+                wind_speed_offset,
+                wind_speed_scaling,
+            )
+
+            name = dumps(
+                {
+                    "convolution_scaling_factor": convolution_scaling_factor,
+                    "convolution_base_factor": convolution_base_factor,
+                    "loss_sharpness_factor": loss_sharpness_factor,
+                    "loss_base_factor": loss_base_factor,
+                    "wind_speed_offset": wind_speed_offset,
+                    "wind_speed_scaling": wind_speed_scaling,
+                }
+            )
+
+            try:
+
+                # Adjust wind speeds
+                wf.sim_data["elevated_wind_speed"] = np.maximum(
+                    wind_speeds * wind_speed_scaling - wind_speed_offset, 0
+                )
+
+                wf.simulate()
+
+                wf.apply_loss_factor(
+                    loss=lambda x: rk_util.low_generation_loss(
+                        x, base=loss_base_factor, sharpness=loss_sharpness_factor
+                    )
+                )
+
+                output = wf.sim_data["capacity_factor"].mean(axis=1)
+            except Exception as e:
+                if isinstance(e, KeyboardInterrupt):
+                    raise e
+
+                # output = np.full(wf.sim_data['elevated_wind_speed'].shape[0], np.nan)
+                print("  Failed :(")
                 continue
 
-            for (loss_sharpness_factor,
-                 loss_base_factor,
-                 wind_speed_offset,
-                 wind_speed_scaling) \
-                in product(loss_sharpness_factors,
-                           loss_base_factors,
-                           wind_speed_offsets,
-                           wind_speed_scalings):
+            outputs[name] = output
 
-                print(convolution_scaling_factor,
-                      convolution_base_factor,
-                      loss_sharpness_factor,
-                      loss_base_factor,
-                      wind_speed_offset,
-                      wind_speed_scaling) 
-    
-                name = dumps({
-                    'convolution_scaling_factor': convolution_scaling_factor,
-                    'convolution_base_factor': convolution_base_factor,
-                    'loss_sharpness_factor': loss_sharpness_factor,
-                    'loss_base_factor': loss_base_factor,
-                    'wind_speed_offset':wind_speed_offset,
-                    'wind_speed_scaling':wind_speed_scaling 
-                })
-    
-                try:
-                    
-                    # Adjust wind speeds
-                    wf.sim_data['elevated_wind_speed'] = np.maximum(
-                            wind_speeds*wind_speed_scaling - wind_speed_offset,
-                            0
-                            )
-    
-    
-                    wf.simulate()
-    
-                    wf.apply_loss_factor(
-                        loss=lambda x: rk_util.low_generation_loss(
-                            x,
-                            base=loss_base_factor,
-                            sharpness=loss_sharpness_factor)
-                    )
-    
-                    output = wf.sim_data['capacity_factor'].mean(axis=1)
-                except Exception as e:
-                    if isinstance(e, KeyboardInterrupt):
-                        raise e
-    
-                    #output = np.full(wf.sim_data['elevated_wind_speed'].shape[0], np.nan)
-                    continue
-                    print("  Failed :(")
-    
-                fo.write("'{name_string}',".format(name_string=name))
-                fo.write(dumps(output.round(4).tolist())[1:-1] + "\n")
+    return pd.DataFrame(outputs, index=wf.time_index)
+
+
+def mean_capacity_factor_from_sectoral_weibull(
+    placements, a_rasters, k_rasters, f_rasters, output=None
+):
+    pass
